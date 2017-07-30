@@ -6,6 +6,9 @@
 #  - Starts ssh sessions defined by "ports" array
 #  - Note: script assumes passwordless login is setup
 #
+#  author:    jeSager
+#  modified:  Sun Jul 30 18:46:36 EDT 2017
+#
 ################################################################################
 
 echo
