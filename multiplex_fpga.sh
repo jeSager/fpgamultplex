@@ -1,14 +1,14 @@
 #!/bin/bash
 ################################################################################
-#  dispatch_commands.sh
+#  multiplex_fpga.sh
 #  --------------------
 #  - Creates tmux session with 16 synced panes
-#  - Starts ssh sessions defined by "hosts" array
+#  - Starts ssh sessions defined by "ports" array
 #  - Note: script assumes passwordless login is setup
 #
 ################################################################################
 
-
+echo
 
 #======================================
 # No nesting tmux: PUNT
@@ -22,20 +22,34 @@ if [ ! -z $TMUX ]; then
   exit
 fi
 
+#======================================
+# Require tmux
+if [ -z $(which tmux) ]; then
+  echo "  *************************************************"
+  echo "  * ERROR:                                        *"
+  echo "  *   This script requires tmux.  Good-bye.       *"
+  echo "  *                                               *"
+  echo "  *************************************************"
+  echo
+  exit
+fi
 
 
 #======================================
 # IFF tmux is NOT open, do all this ...
 
+echo "  *************************************************"
+echo "  *    This script will open 16 terminal panes    *"
+echo "  * MAXIMIZE YOUR TERMINAL TO AVOID COMPLICATIONS *"
+echo "  *              <ENTER> to continue              *"
+echo "  *                                               *"
+echo "  *************************************************"
+read
 
 
 #======================================
-# Create hosts array
-hosts=(\
-  user@12.12.12.12 \
-  user@13.13.13.13 \
-  user@14.14.14.14 \
-)
+# Create ports array
+ports=(00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15)
 
 
 
@@ -46,11 +60,14 @@ tmux new-session -s fpga -d
 
 
 #======================================
-# Keys for:  sync, zoom, killall
-#    Note:  does not sync while zoomed
+# Keys for:  sync, zoom, killall, nextpane, mouse(on)
+#    Notes:  - Does not sync while zoomed
+#            - Mouse param is for newest tmux version
 tmux bind-key -n F2 setw synchronize-panes
 tmux bind-key -n F12 resize-pane -Z
 tmux bind-key -n F9 confirm-before kill-session
+tmux bind-key -n C-o select-pane -t :.+
+tmux set -g mouse on
 
 
 
@@ -82,9 +99,12 @@ tmux select-pane -t 0
 
 #======================================
 # SSH in each pane
-for i in $(seq 0 ${#hosts[@]}); do
-  host=${hosts[i]}
-  tmux send-keys ${host}
+for i in $(seq 0 $(( ${#ports[@]}-1 ))); do
+  port=${ports[i]}
+  cmd="ssh -p222"$port" linaro@127.0.0.1"
+  tmux send-keys "$cmd"
+# uncommenting below will auto-press enter
+#  tmux send-keys C-m
   tmux select-pane -t :.+
 done
 
@@ -92,14 +112,16 @@ done
 
 #======================================
 # Initialze-sync and Attach
-tmux select-pane -t 0
+# tmux select-pane -t 0
+tmux send-keys C-L
 tmux setw synchronize-panes
 tmux attach -t fpga
 
 
-
+clear
+echo
 echo " ***************************************************"
-echo " * The dispatch_commands script ended successfully *"
+echo " * The multiplex_fpga script ended successfully    *"
 echo " *                                                 *"
 echo " ***************************************************"
 echo
